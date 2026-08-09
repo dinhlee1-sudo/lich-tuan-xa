@@ -373,7 +373,7 @@
             }
         ];
 
-        const scheduleDataByOrg = {
+        let scheduleDataByOrg = {
             "dux": [
                 {
                     date: "2025-01-06",
@@ -570,6 +570,37 @@
             accent_color: "#f59e0b",
             header_color: "#1e40af"
         };
+
+        // =====================================================
+        // KẾT NỐI MÁY CHỦ GOOGLE APPS SCRIPT
+        // =====================================================
+        const API_URL = "https://script.google.com/macros/s/AKfycbzNprzryhiVK0m9vMrXcn6MdVAVP8-5JgfjtEPkxJVqHuOVdcTeBj5J_QGIHcyqjT7k/exec";
+
+        async function loadDataFromServer() {
+            try {
+                const response = await fetch(API_URL, { method: "GET", cache: "no-store" });
+                if (!response.ok) throw new Error("Không thể kết nối máy chủ");
+                const data = await response.json();
+                if (data && data.ok && data.data && data.data.scheduleDataByOrg) {
+                    scheduleDataByOrg = data.data.scheduleDataByOrg;
+                }
+            } catch (error) {
+                console.error("Lỗi tải dữ liệu từ máy chủ:", error);
+                showNotification("⚠️ Không tải được dữ liệu máy chủ. Đang dùng dữ liệu hiện có.", true);
+            }
+        }
+
+        async function saveDataToServer() {
+            const response = await fetch(API_URL, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify({ scheduleDataByOrg })
+            });
+            if (!response.ok) throw new Error("Không thể lưu dữ liệu lên máy chủ");
+            const result = await response.json();
+            if (!result.ok) throw new Error(result.error || "Máy chủ từ chối lưu dữ liệu");
+            return result;
+        }
 
         let config = { ...defaultConfig };
         let currentEditOrg = organizations[0].id;
@@ -1071,19 +1102,36 @@
             }, 100);
         }
 
-        function saveChanges() {
-            renderAllSchedules();
-            toggleEditMode();
-            showNotification('✅ Đã lưu thay đổi thành công!');
+        async function saveChanges() {
+            const saveButton = document.getElementById('save-changes');
+            const oldText = saveButton ? saveButton.textContent : '';
+            try {
+                if (saveButton) {
+                    saveButton.disabled = true;
+                    saveButton.textContent = '⏳ Đang lưu...';
+                }
+                await saveDataToServer();
+                renderAllSchedules();
+                toggleEditMode();
+                showNotification('✅ Đã lưu dữ liệu lên máy chủ!');
+            } catch (error) {
+                console.error(error);
+                showNotification('❌ Lưu dữ liệu thất bại: ' + error.message, true);
+            } finally {
+                if (saveButton) {
+                    saveButton.disabled = false;
+                    saveButton.textContent = oldText || '💾 Lưu Thay Đổi';
+                }
+            }
         }
 
         function cancelEdit() {
             toggleEditMode();
         }
 
-        function showNotification(message) {
+        function showNotification(message, isError = false) {
             const notification = document.createElement('div');
-            notification.className = 'fixed top-20 right-4 bg-green-600 text-white px-6 py-4 rounded-lg shadow-xl z-50 font-bold text-lg animate-bounce';
+            notification.className = `fixed top-20 right-4 ${isError ? 'bg-red-600' : 'bg-green-600'} text-white px-6 py-4 rounded-lg shadow-xl z-50 font-bold text-lg animate-bounce`;
             notification.textContent = message;
             document.body.appendChild(notification);
             
@@ -1117,6 +1165,9 @@
             } else {
                 onConfigChange(defaultConfig);
             }
+
+            await loadDataFromServer();
+            renderAllSchedules();
         }
 
         init();
