@@ -1,0 +1,1125 @@
+<!doctype html>
+<html lang="vi" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lịch Công Tác Tuần</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+  <style>
+        body {
+            box-sizing: border-box;
+        }
+        * {
+            font-family: 'Be Vietnam Pro', sans-serif;
+        }
+        
+        /* Màu nền cho từng ngày trong tuần */
+        .day-monday { background-color: #fef3c7; }
+        .day-tuesday { background-color: #dbeafe; }
+        .day-wednesday { background-color: #dcfce7; }
+        .day-thursday { background-color: #fce7f3; }
+        .day-friday { background-color: #e0e7ff; }
+        .day-saturday { background-color: #fed7aa; }
+        .day-sunday { background-color: #fecaca; }
+        
+        /* Highlight ngày hiện tại */
+        .today-row {
+            background-color: #fef08a !important;
+            font-weight: 700;
+            position: relative;
+        }
+        .today-row::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 6px;
+            background: linear-gradient(180deg, #f59e0b, #d97706);
+        }
+        
+        /* Animation cho header */
+        @keyframes pulse-subtle {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.85; }
+        }
+        
+        .header-badge {
+            animation: pulse-subtle 3s ease-in-out infinite;
+        }
+        
+        /* Table styling */
+        .schedule-table {
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+        
+        .schedule-table th {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .schedule-table td, .schedule-table th {
+            border: 2px solid #374151;
+        }
+        
+        /* Organization section styling */
+        .org-section {
+            page-break-inside: avoid;
+        }
+        
+        .org-header {
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            padding: 1.5rem;
+            border-radius: 0.75rem 0.75rem 0 0;
+        }
+
+        .org-badge {
+            width: 3.5rem;
+            height: 3.5rem;
+            border-radius: 0.5rem;
+            background: white;
+            padding: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Desktop optimizations - Better text sizing */
+        @media (min-width: 769px) {
+            body {
+                font-size: 16px;
+            }
+            
+            .schedule-table td, .schedule-table th {
+                font-size: 15px;
+                line-height: 1.5;
+                padding: 16px 12px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+                line-height: 1.2;
+            }
+            
+            h2 {
+                font-size: 1.75rem;
+                line-height: 1.3;
+            }
+
+            .org-badge {
+                width: 4.5rem;
+                height: 4.5rem;
+            }
+        }
+        
+        /* Large desktop optimizations */
+        @media (min-width: 1280px) {
+            .schedule-table td, .schedule-table th {
+                font-size: 16px;
+                padding: 18px 16px;
+            }
+            
+            h1 {
+                font-size: 2.5rem;
+            }
+            
+            h2 {
+                font-size: 2rem;
+            }
+
+            .org-badge {
+                width: 5rem;
+                height: 5rem;
+            }
+        }
+        
+        /* Responsive text sizes for TV/Large screens */
+        @media (min-width: 1920px) {
+            .tv-title { font-size: 3rem; }
+            .tv-subtitle { font-size: 1.75rem; }
+            .tv-table-header { font-size: 1.5rem; }
+            .tv-table-cell { font-size: 1.35rem; }
+            
+            .schedule-table td, .schedule-table th {
+                font-size: 18px;
+                padding: 20px 18px;
+            }
+
+            .org-badge {
+                width: 6rem;
+                height: 6rem;
+            }
+        }
+        
+        /* Mobile optimizations */
+        @media (max-width: 768px) {
+            .mobile-card {
+                border-left: 4px solid #3b82f6;
+                margin-bottom: 1rem;
+            }
+            .mobile-card.today-card {
+                border-left-color: #f59e0b;
+                background: linear-gradient(to right, #fef08a, #fefce8);
+            }
+            .hide-mobile {
+                display: none;
+            }
+            .mobile-scroll {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            /* Better text sizing on mobile */
+            body {
+                font-size: 16px;
+            }
+            
+            h1, h2, h3 {
+                line-height: 1.3;
+            }
+            
+            .mobile-card {
+                font-size: 15px;
+            }
+            
+            .mobile-card .font-bold {
+                font-size: 17px;
+            }
+            
+            /* Prevent text from being too small */
+            * {
+                -webkit-text-size-adjust: 100%;
+                text-size-adjust: 100%;
+            }
+
+            .org-badge {
+                width: 2.5rem;
+                height: 2.5rem;
+            }
+        }
+
+        /* Delete confirmation overlay */
+        .delete-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 60;
+            padding: 1rem;
+        }
+        
+        .delete-confirm-box {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            max-width: 400px;
+            width: 100%;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+        }
+    </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+ </head>
+ <body class="h-full bg-gray-50 text-gray-900">
+  <div id="app" class="h-full w-full overflow-auto p-6 lg:p-8"><!-- Edit Mode Toggle Button -->
+   <div class="fixed top-4 right-4 z-50"><button id="toggle-edit-mode" class="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-bold py-2 md:py-3 px-4 md:px-6 rounded-full shadow-lg transition-all transform hover:scale-105 flex items-center gap-2 text-sm md:text-base">
+     <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+     </svg><span id="edit-btn-text">Sửa Dữ Liệu</span> </button>
+   </div><!-- Delete Confirmation Dialog -->
+   <div id="delete-overlay" class="delete-overlay hidden">
+    <div class="delete-confirm-box">
+     <div class="flex items-start gap-3 mb-4">
+      <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+       <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+       </svg>
+      </div>
+      <div class="flex-1">
+       <h3 class="text-lg font-bold text-gray-900 mb-2">Xác nhận xóa</h3>
+       <p class="text-sm text-gray-600 mb-1">Bạn có chắc muốn xóa công tác này?</p>
+       <div id="delete-item-info" class="mt-3 p-3 bg-gray-50 rounded-lg text-sm"><!-- Item info will be inserted here -->
+       </div>
+      </div>
+     </div>
+     <div class="flex gap-3"><button id="cancel-delete" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-4 rounded-lg transition-all"> Hủy </button> <button id="confirm-delete" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg transition-all"> Xóa </button>
+     </div>
+    </div>
+   </div><!-- Edit Panel (Hidden by default) -->
+   <div id="edit-panel" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden">
+    <div class="absolute inset-2 md:inset-4 bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col"><!-- Edit Panel Header -->
+     <div class="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-4 md:p-6 flex justify-between items-center">
+      <div class="flex items-center gap-2 md:gap-3">
+       <svg class="w-6 h-6 md:w-8 md:h-8" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+       </svg>
+       <h2 class="text-lg md:text-2xl font-bold">QUẢN LÝ LỊCH CÔNG TÁC</h2>
+      </div><button id="close-edit-panel" class="hover:bg-purple-800 p-2 rounded-lg transition-all">
+       <svg class="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+       </svg></button>
+     </div><!-- Edit Panel Content -->
+     <div class="flex-1 overflow-auto p-3 md:p-6">
+      <div class="max-w-6xl mx-auto"><!-- Organization Selector -->
+       <div class="mb-6 bg-blue-50 border-2 border-blue-300 rounded-xl p-4"><label class="block text-sm md:text-base font-bold text-blue-900 mb-3">Chọn đơn vị để sửa:</label> <select id="org-selector" class="w-full px-4 py-3 border-2 border-blue-400 rounded-lg focus:border-blue-600 focus:outline-none text-base font-semibold bg-white"> <!-- Will be populated by JavaScript --> </select>
+       </div><!-- Add New Button -->
+       <div class="mb-4 md:mb-6"><button id="add-new-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 md:py-3 px-4 md:px-6 rounded-lg shadow-md transition-all flex items-center gap-2 text-sm md:text-base w-full md:w-auto justify-center">
+         <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+         </svg> Thêm Công Tác Mới </button>
+       </div><!-- Schedule Items List -->
+       <div id="edit-list" class="space-y-3 md:space-y-4"><!-- Will be populated by JavaScript -->
+       </div>
+      </div>
+     </div><!-- Save Button -->
+     <div class="bg-gray-100 p-3 md:p-6 border-t-2 border-gray-300 flex flex-col md:flex-row justify-end gap-2 md:gap-4"><button id="cancel-edit" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 md:py-3 px-6 md:px-8 rounded-lg shadow-md transition-all text-sm md:text-base order-2 md:order-1"> Hủy </button> <button id="save-changes" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 md:py-3 px-6 md:px-8 rounded-lg shadow-md transition-all flex items-center justify-center gap-2 text-sm md:text-base order-1 md:order-2">
+       <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+       </svg> Lưu Thay Đổi </button>
+     </div>
+    </div>
+   </div><!-- Header Section -->
+   <header class="text-center mb-6 md:mb-8">
+    <div class="inline-flex items-center gap-2 md:gap-3 mb-3 md:mb-4">
+     <div class="w-12 h-12 md:w-16 md:h-16 lg:w-20 lg:h-20 bg-gradient-to-br from-blue-600 to-blue-800 rounded-xl flex items-center justify-center shadow-lg">
+      <svg class="w-7 h-7 md:w-10 md:h-10 lg:w-12 lg:h-12 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+      </svg>
+     </div>
+     <div class="text-left">
+      <p id="org-name" class="text-xs md:text-lg lg:text-xl font-semibold text-blue-700 uppercase tracking-wide">ĐẢNG ỦY XÃ PHÚ TÚC</p>
+      <h1 id="main-title" class="text-xl md:text-3xl lg:text-4xl tv-title font-extrabold text-gray-800">LỊCH CÔNG TÁC TUẦN</h1>
+     </div>
+    </div><!-- Week Info -->
+    <div class="flex flex-wrap justify-center gap-2 md:gap-4 mt-4 md:mt-6 px-2">
+     <div class="header-badge bg-gradient-to-r from-blue-600 to-blue-700 text-white px-3 md:px-6 py-2 md:py-3 rounded-full shadow-md text-sm md:text-base"><span class="lg:text-xl tv-subtitle font-bold" id="week-number">Tuần 01</span>
+     </div>
+     <div class="bg-white border-2 border-gray-300 px-3 md:px-6 py-2 md:py-3 rounded-full shadow-md text-sm md:text-base"><span class="lg:text-xl tv-subtitle font-semibold text-gray-700" id="week-range">Từ ngày 01/01/2025 đến 07/01/2025</span>
+     </div>
+     <div class="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-3 md:px-6 py-2 md:py-3 rounded-full shadow-md text-sm md:text-base"><span class="lg:text-xl tv-subtitle font-bold" id="current-date">Hôm nay: Thứ Hai, 01/01/2025</span>
+     </div>
+    </div>
+   </header><!-- All Organizations Schedules -->
+   <div id="all-schedules" class="space-y-8"><!-- Will be populated by JavaScript -->
+   </div><!-- Footer -->
+   <footer class="mt-8 text-center">
+    <p class="text-gray-500 text-sm lg:text-base"><span class="inline-flex items-center gap-2">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg> Cập nhật lúc: <span id="update-time">--:--</span> </span></p>
+   </footer>
+  </div>
+  <script>
+        // =====================================================
+        // CẤU HÌNH DỮ LIỆU LỊCH - SỬA TẠI ĐÂY
+        // =====================================================
+        
+        const organizations = [
+            {
+                id: "dux",
+                name: "Đảng ủy xã",
+                iconUrl: "https://upload.wikimedia.org/wikipedia/commons/b/bf/L%C3%A1_c%E1%BB%9D_c%E1%BB%A7a_%C4%90%E1%BA%A3ng_c%E1%BB%99ng_s%E1%BA%A3n_Vi%E1%BB%87t_Nam.png", 
+                color: "#991b1b"
+            },
+            {
+                id: "vpdu",
+                name: "Văn phòng Đảng ủy xã",
+                iconUrl: "https://huyenuygocongtay.vn/uploads/ngay-truyen-thong/logo-vp.png",
+                color: "#dc2626"
+            },
+            {
+                id: "bxdd",
+                name: "Ban xây dựng đảng",
+                iconUrl: "https://dienbientv.vn/dataimages/202508//original/images3237606_DANG.jpg",
+                color: "#ea580c"
+            },
+            {
+                id: "ubktdu",
+                name: "Ủy ban kiểm tra đảng ủy",
+                iconUrl: "https://thegioibackground.com/wp-content/uploads/2025/07/logo-uy-ban-kiem-tra-dang.jpg",
+                color: "#d97706"
+            },
+            {
+                id: "ttct",
+                name: "Trung tâm chính trị",
+                iconUrl: "https://nxblyluanchinhtri.vn/wp-content/uploads/2024/01/LOGO.jpg",
+                color: "#ca8a04"
+            },
+            {
+                id: "ubmttq",
+                name: "Ủy ban Mặt trận tổ quốc",
+                iconUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTn373D7iU4aBk-HaaPX2jf1AwDxzQ8106Y6Q&s",
+                color: "#65a30d"
+            },
+            {
+                id: "hnd",
+                name: "Hội Nông dân",
+                iconUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQvKn0nGBp55cnrqsTVPV0XPXgrT7YAmSpy3A&s",
+                color: "#059669"
+            },
+            {
+                id: "hccb",
+                name: "Hội Cựu chiến binh",
+                iconUrl: "https://inkythuatso.com/uploads/images/2021/12/logo-hoi-cuu-chien-binh-inkythuatso-01-07-14-07-37.jpg",
+                color: "#0891b2"
+            },
+            {
+                id: "hpn",
+                name: "Hội Phụ nữ",
+                iconUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSyzAXs6HMX_Dirck8Kdvbet4TXcYjIFzf7zA&s",
+                color: "#db2777"
+            },
+            {
+                id: "dtn",
+                name: "Đoàn thanh niên",
+                iconUrl: "https://inkythuatso.com/uploads/images/2021/09/logo-doan-thanh-nien-vieclamvui-09-10-23-08.jpg",
+                color: "#7c3aed"
+            }
+        ];
+
+        const scheduleDataByOrg = {
+            "dux": [
+                {
+                    date: "2025-01-06",
+                    startTime: "08:00",
+                    endTime: "11:30",
+                    content: "Họp Ban Thường vụ Đảng ủy xã tháng 1",
+                    location: "Phòng họp Đảng ủy xã",
+                    participants: "Ban Thường vụ Đảng ủy"
+                },
+                {
+                    date: "2025-01-09",
+                    startTime: "14:00",
+                    endTime: "17:00",
+                    content: "Họp Ban Chấp hành Đảng bộ - triển khai nhiệm vụ quý 1",
+                    location: "Hội trường UBND xã",
+                    participants: "BCH Đảng bộ, Chi ủy các chi bộ"
+                }
+            ],
+            "vpdu": [
+                {
+                    date: "2025-01-06",
+                    startTime: "08:00",
+                    endTime: "10:00",
+                    content: "Họp giao ban đầu tuần - triển khai nhiệm vụ tuần",
+                    location: "Văn phòng Đảng ủy",
+                    participants: "Toàn thể cán bộ VP Đảng ủy"
+                },
+                {
+                    date: "2025-01-08",
+                    startTime: "14:00",
+                    endTime: "16:00",
+                    content: "Soạn thảo văn bản triển khai nghị quyết",
+                    location: "Phòng làm việc",
+                    participants: "Trưởng VP, Văn thư"
+                }
+            ],
+            "bxdd": [
+                {
+                    date: "2025-01-07",
+                    startTime: "08:30",
+                    endTime: "11:00",
+                    content: "Kiểm tra công tác xây dựng tổ chức cơ sở đảng",
+                    location: "Chi bộ thôn 1",
+                    participants: "Ban xây dựng đảng, BCH Chi bộ"
+                },
+                {
+                    date: "2025-01-09",
+                    startTime: "14:00",
+                    endTime: "16:30",
+                    content: "Hướng dẫn công tác kết nạp đảng viên mới",
+                    location: "Phòng họp Đảng ủy",
+                    participants: "Trưởng ban, Chi ủy các chi bộ"
+                }
+            ],
+            "ubktdu": [
+                {
+                    date: "2025-01-06",
+                    startTime: "14:00",
+                    endTime: "17:00",
+                    content: "Xem xét đơn khiếu nại của đảng viên",
+                    location: "Phòng làm việc UBKT",
+                    participants: "Ủy viên UBKT Đảng ủy"
+                },
+                {
+                    date: "2025-01-10",
+                    startTime: "08:00",
+                    endTime: "11:00",
+                    content: "Kiểm tra việc chấp hành Điều lệ Đảng tại Chi bộ tdp 2",
+                    location: "Chi bộ tdp 2",
+                    participants: "UBKT Đảng ủy, BCH Chi bộ 2"
+                }
+            ],
+            "ttct": [
+                {
+                    date: "2025-01-07",
+                    startTime: "08:00",
+                    endTime: "11:00",
+                    content: "Tập huấn nghị quyết Đại hội Đảng các cấp",
+                    location: "Hội trường Trung tâm chính trị",
+                    participants: "Cán bộ chủ chốt các chi bộ"
+                },
+                {
+                    date: "2025-01-10",
+                    startTime: "14:00",
+                    endTime: "16:30",
+                    content: "Bồi dưỡng lý luận chính trị cho đảng viên mới",
+                    location: "Phòng học Trung tâm",
+                    participants: "Đảng viên mới, Giảng viên"
+                }
+            ],
+            "ubmttq": [
+                {
+                    date: "2025-01-07",
+                    startTime: "08:00",
+                    endTime: "10:30",
+                    content: "Họp Ban Thường trực MTTQ xã tháng 1",
+                    location: "Phòng họp UBND xã",
+                    participants: "Ban Thường trực, các thành viên"
+                },
+                {
+                    date: "2025-01-09",
+                    startTime: "14:00",
+                    endTime: "16:00",
+                    content: "Vận động đóng góp Quỹ vì người nghèo",
+                    location: "Các thôn",
+                    participants: "BCH MTTQ, Trưởng thôn"
+                }
+            ],
+            "hnd": [
+                {
+                    date: "2025-01-06",
+                    startTime: "08:00",
+                    endTime: "11:00",
+                    content: "Tập huấn kỹ thuật trồng rau an toàn",
+                    location: "Nhà văn hóa thôn 3",
+                    participants: "Ban chấp hành Hội, Hội viên"
+                },
+                {
+                    date: "2025-01-08",
+                    startTime: "14:00",
+                    endTime: "16:00",
+                    content: "Họp triển khai mô hình kinh tế tập thể",
+                    location: "Phòng họp UBND xã",
+                    participants: "BCH Hội ND, đại diện hợp tác xã"
+                }
+            ],
+            "hccb": [
+                {
+                    date: "2025-01-07",
+                    startTime: "08:00",
+                    endTime: "10:00",
+                    content: "Thăm hỏi, động viên cựu chiến binh có hoàn cảnh khó khăn",
+                    location: "Các hộ gia đình",
+                    participants: "Ban chấp hành Hội CCB"
+                },
+                {
+                    date: "2025-01-10",
+                    startTime: "14:00",
+                    endTime: "16:30",
+                    content: "Họp triển khai kế hoạch hoạt động năm 2026",
+                    location: "Phòng họp lầu 3",
+                    participants: "BCH Hội, Hội CCB các thôn"
+                }
+            ],
+            "hpn": [
+                {
+                    date: "2025-01-06",
+                    startTime: "14:00",
+                    endTime: "16:30",
+                    content: "Tập huấn kỹ năng khởi nghiệp cho phụ nữ",
+                    location: "Nhà văn hóa xã",
+                    participants: "BCH Hội, Hội viên phụ nữ"
+                },
+                {
+                    date: "2025-01-09",
+                    startTime: "08:00",
+                    endTime: "11:00",
+                    content: "Kiểm tra mô hình kinh tế gia đình tiêu biểu",
+                    location: "Thôn Hưng HÀ",
+                    participants: "BCH Hội, Chủ nhiệm CLB"
+                }
+            ],
+            "dtn": [
+                {
+                    date: "2025-01-08",
+                    startTime: "08:00",
+                    endTime: "10:30",
+                    content: "Ra quân Tháng Thanh niên - làm đường giao thông nông thôn",
+                    location: "Đường Hai bà trưng",
+                    participants: "BCH Đoàn, Đoàn viên thanh niên"
+                },
+                {
+                    date: "2025-01-10",
+                    startTime: "14:00",
+                    endTime: "16:00",
+                    content: "Họp Chi đoàn - triển khai kế hoạch tháng",
+                    location: "Phòng họp ",
+                    participants: "BCH Đoàn xã, Bí thư các Chi đoàn"
+                }
+            ]
+        };
+        
+        // =====================================================
+        // KẾT THÚC PHẦN CẤU HÌNH DỮ LIỆU
+        // =====================================================
+
+        // Default configuration
+        const defaultConfig = {
+            organization_name: "ĐẢNG ỦY XÃ PHÚ TÚC",
+            title_text: "LỊCH CÔNG TÁC TUẦN",
+            primary_color: "#1d4ed8",
+            secondary_color: "#ffffff",
+            text_color: "#1f2937",
+            accent_color: "#f59e0b",
+            header_color: "#1e40af"
+        };
+
+        let config = { ...defaultConfig };
+        let currentEditOrg = organizations[0].id;
+
+        // Utility functions
+        function getISOWeek(date) {
+            const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+            const dayNum = d.getUTCDay() || 7;
+            d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+            const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+            return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+        }
+
+        function getWeekDates(date) {
+            const day = date.getDay();
+            const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+            const monday = new Date(date);
+            monday.setDate(diff);
+            const sunday = new Date(monday);
+            sunday.setDate(monday.getDate() + 6);
+            return { monday, sunday };
+        }
+
+        function formatDate(date) {
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${day}/${month}/${year}`;
+        }
+
+        function getDayName(date) {
+            const days = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+            return days[date.getDay()];
+        }
+
+        function getDayClass(date) {
+            const dayIndex = date.getDay();
+            const classes = {
+                0: 'day-sunday',
+                1: 'day-monday',
+                2: 'day-tuesday',
+                3: 'day-wednesday',
+                4: 'day-thursday',
+                5: 'day-friday',
+                6: 'day-saturday'
+            };
+            return classes[dayIndex];
+        }
+
+        function isToday(dateString) {
+            const today = new Date();
+            const compareDate = new Date(dateString);
+            return today.toDateString() === compareDate.toDateString();
+        }
+
+        function parseDate(dateString) {
+            return new Date(dateString + 'T00:00:00');
+        }
+
+        // Render all schedules
+        function renderAllSchedules() {
+            const container = document.getElementById('all-schedules');
+            const today = new Date();
+            const { monday, sunday } = getWeekDates(today);
+            const weekNum = getISOWeek(today);
+
+            // Update header info
+            document.getElementById('week-number').textContent = `Tuần ${String(weekNum).padStart(2, '0')}`;
+            document.getElementById('week-range').textContent = `Từ ngày ${formatDate(monday)} đến ${formatDate(sunday)}`;
+            document.getElementById('current-date').textContent = `Hôm nay: ${getDayName(today)}, ${formatDate(today)}`;
+            document.getElementById('update-time').textContent = today.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+
+            let allHtml = '';
+
+            organizations.forEach(org => {
+                const scheduleData = scheduleDataByOrg[org.id] || [];
+                
+                // Sort schedule by date and time
+                const sortedSchedule = [...scheduleData].sort((a, b) => {
+                    const dateCompare = a.date.localeCompare(b.date);
+                    if (dateCompare !== 0) return dateCompare;
+                    return a.startTime.localeCompare(b.startTime);
+                });
+
+                // Group by date
+                const groupedSchedule = {};
+                sortedSchedule.forEach(item => {
+                    if (!groupedSchedule[item.date]) {
+                        groupedSchedule[item.date] = [];
+                    }
+                    groupedSchedule[item.date].push(item);
+                });
+
+                // Generate HTML for this organization
+                let orgHtml = `
+                    <div class="org-section bg-white rounded-2xl shadow-xl overflow-hidden border-2 border-gray-300 mb-8">
+                        <div class="org-header" style="background: linear-gradient(135deg, ${org.color} 0%, ${org.color}dd 100%);">
+                            <div class="flex items-center gap-3 md:gap-4">
+                                <div class="org-badge">
+                                    ${org.iconUrl ? `<img src="${org.iconUrl}" alt="${org.name}" loading="lazy" onerror="this.style.display='none'" class="w-full h-full object-contain rounded-lg">` : `<div class="w-full h-full flex items-center justify-center text-white text-2xl font-bold">${org.name.charAt(0)}</div>`}
+                                </div>
+                                <div>
+                                    <h2 class="text-xl md:text-3xl font-extrabold text-white uppercase tracking-wide">${org.name}</h2>
+                                    <p class="text-white text-opacity-90 text-sm md:text-base mt-1">Lịch công tác tuần ${String(weekNum).padStart(2, '0')}</p>
+                                </div>
+                            </div>
+                        </div>
+                `;
+
+                if (sortedSchedule.length === 0) {
+                    orgHtml += `
+                        <div class="p-8 md:p-12 text-center text-gray-400">
+                            <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                            <p class="text-lg font-semibold">Chưa có lịch công tác</p>
+                        </div>
+                    `;
+                } else {
+                    // Desktop table
+                    orgHtml += `
+                        <div class="hidden md:block">
+                            <table class="schedule-table w-full">
+                                <thead>
+                                    <tr class="bg-gradient-to-r from-gray-700 to-gray-800 text-white">
+                                        <th class="tv-table-header text-base lg:text-lg px-4 py-4 font-bold text-center w-[12%]">THỜI GIAN</th>
+                                        <th class="tv-table-header text-base lg:text-lg px-4 py-4 font-bold text-center w-[15%]">NGÀY</th>
+                                        <th class="tv-table-header text-base lg:text-lg px-4 py-4 font-bold text-center w-[35%]">NỘI DUNG CÔNG TÁC</th>
+                                        <th class="tv-table-header text-base lg:text-lg px-4 py-4 font-bold text-center w-[18%]">ĐỊA ĐIỂM</th>
+                                        <th class="tv-table-header text-base lg:text-lg px-4 py-4 font-bold text-center w-[20%]">THÀNH PHẦN THAM GIA</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                    `;
+
+                    Object.keys(groupedSchedule).sort().forEach(date => {
+                        const items = groupedSchedule[date];
+                        const dateObj = parseDate(date);
+                        const dayClass = getDayClass(dateObj);
+                        const todayClass = isToday(date) ? 'today-row' : '';
+                        
+                        items.forEach((item, index) => {
+                            orgHtml += `
+                                <tr class="${dayClass} ${todayClass} hover:brightness-95 transition-all">
+                                    <td class="tv-table-cell text-sm lg:text-base px-4 py-4 text-center font-semibold border-gray-400">
+                                        ${item.startTime} - ${item.endTime}
+                                    </td>
+                                    ${index === 0 ? `
+                                        <td class="tv-table-cell text-sm lg:text-base px-4 py-4 text-center border-gray-400" rowspan="${items.length}">
+                                            <div class="font-bold" style="color: ${org.color}">${getDayName(dateObj)}</div>
+                                            <div class="text-gray-600 mt-1">${formatDate(dateObj)}</div>
+                                            ${isToday(date) ? '<div class="mt-2"><span class="bg-amber-500 text-white text-xs px-2 py-1 rounded-full font-bold">HÔM NAY</span></div>' : ''}
+                                        </td>
+                                    ` : ''}
+                                    <td class="tv-table-cell text-sm lg:text-base px-4 py-4 border-gray-400">
+                                        <div class="font-semibold">${item.content}</div>
+                                    </td>
+                                    <td class="tv-table-cell text-sm lg:text-base px-4 py-4 text-center border-gray-400">
+                                        <div class="flex items-center justify-center gap-2">
+                                            <svg class="w-4 h-4 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                            </svg>
+                                            <span>${item.location}</span>
+                                        </div>
+                                    </td>
+                                    <td class="tv-table-cell text-sm lg:text-base px-4 py-4 border-gray-400">
+                                        ${item.participants}
+                                    </td>
+                                </tr>
+                            `;
+                        });
+                    });
+
+                    orgHtml += `
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+
+                    // Mobile cards
+                    orgHtml += `<div class="md:hidden p-4 space-y-4">`;
+                    
+                    Object.keys(groupedSchedule).sort().forEach(date => {
+                        const items = groupedSchedule[date];
+                        const dateObj = parseDate(date);
+                        const todayCardClass = isToday(date) ? 'today-card' : '';
+                        
+                        items.forEach((item) => {
+                            orgHtml += `
+                                <div class="mobile-card ${todayCardClass} bg-white rounded-lg shadow-md p-4" style="border-left: 4px solid ${org.color}">
+                                    <div class="flex justify-between items-start mb-3 pb-3 border-b-2 border-gray-200">
+                                        <div>
+                                            <div class="font-bold text-lg" style="color: ${org.color}">${getDayName(dateObj)}</div>
+                                            <div class="text-gray-600 text-sm">${formatDate(dateObj)}</div>
+                                            ${isToday(date) ? '<div class="mt-1"><span class="bg-amber-500 text-white text-xs px-2 py-1 rounded-full font-bold">HÔM NAY</span></div>' : ''}
+                                        </div>
+                                        <div class="text-right">
+                                            <div class="flex items-center gap-1 font-semibold" style="color: ${org.color}">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                                </svg>
+                                                <span class="text-sm">${item.startTime}</span>
+                                            </div>
+                                            <div class="text-xs text-gray-500 mt-1">đến ${item.endTime}</div>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <div class="font-bold text-gray-800 text-base mb-2">${item.content}</div>
+                                    </div>
+                                    <div class="flex items-start gap-2 mb-2">
+                                        <svg class="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                        </svg>
+                                        <span class="text-sm text-gray-700">${item.location}</span>
+                                    </div>
+                                    <div class="flex items-start gap-2">
+                                        <svg class="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                        </svg>
+                                        <span class="text-sm text-gray-700">${item.participants}</span>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                    });
+
+                    orgHtml += `</div>`;
+                }
+
+                orgHtml += `</div>`;
+                allHtml += orgHtml;
+            });
+
+            container.innerHTML = allHtml;
+        }
+
+        // Apply configuration to UI
+        async function onConfigChange(cfg) {
+            config = { ...defaultConfig, ...cfg };
+            
+            document.getElementById('org-name').textContent = config.organization_name || defaultConfig.organization_name;
+            document.getElementById('main-title').textContent = config.title_text || defaultConfig.title_text;
+            
+            renderAllSchedules();
+        }
+
+        // Map to capabilities for color/font editing
+        function mapToCapabilities(cfg) {
+            return {
+                recolorables: [
+                    {
+                        get: () => cfg.primary_color || defaultConfig.primary_color,
+                        set: (value) => {
+                            cfg.primary_color = value;
+                            window.elementSdk.setConfig({ primary_color: value });
+                        }
+                    },
+                    {
+                        get: () => cfg.secondary_color || defaultConfig.secondary_color,
+                        set: (value) => {
+                            cfg.secondary_color = value;
+                            window.elementSdk.setConfig({ secondary_color: value });
+                        }
+                    },
+                    {
+                        get: () => cfg.text_color || defaultConfig.text_color,
+                        set: (value) => {
+                            cfg.text_color = value;
+                            window.elementSdk.setConfig({ text_color: value });
+                        }
+                    },
+                    {
+                        get: () => cfg.accent_color || defaultConfig.accent_color,
+                        set: (value) => {
+                            cfg.accent_color = value;
+                            window.elementSdk.setConfig({ accent_color: value });
+                        }
+                    },
+                    {
+                        get: () => cfg.header_color || defaultConfig.header_color,
+                        set: (value) => {
+                            cfg.header_color = value;
+                            window.elementSdk.setConfig({ header_color: value });
+                        }
+                    }
+                ],
+                borderables: [],
+                fontEditable: undefined,
+                fontSizeable: undefined
+            };
+        }
+
+        // Map to edit panel values
+        function mapToEditPanelValues(cfg) {
+            return new Map([
+                ["organization_name", cfg.organization_name || defaultConfig.organization_name],
+                ["title_text", cfg.title_text || defaultConfig.title_text]
+            ]);
+        }
+
+        // Edit mode functionality
+        let isEditMode = false;
+        let deleteIndex = -1;
+
+        function toggleEditMode() {
+            isEditMode = !isEditMode;
+            const panel = document.getElementById('edit-panel');
+            const btnText = document.getElementById('edit-btn-text');
+            
+            if (isEditMode) {
+                panel.classList.remove('hidden');
+                btnText.textContent = 'Đóng';
+                renderOrgSelector();
+                renderEditList();
+            } else {
+                panel.classList.add('hidden');
+                btnText.textContent = 'Sửa Dữ Liệu';
+            }
+        }
+
+        function renderOrgSelector() {
+            const selector = document.getElementById('org-selector');
+            let html = '';
+            organizations.forEach(org => {
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = org.icon;
+                const iconText = tempDiv.textContent || '📋';
+                html += `<option value="${org.id}" ${org.id === currentEditOrg ? 'selected' : ''}>${org.name}</option>`;
+            });
+            selector.innerHTML = html;
+            
+            selector.onchange = (e) => {
+                currentEditOrg = e.target.value;
+                renderEditList();
+            };
+        }
+
+        function renderEditList() {
+            const editList = document.getElementById('edit-list');
+            const scheduleData = scheduleDataByOrg[currentEditOrg] || [];
+            const sortedData = [...scheduleData].sort((a, b) => {
+                const dateCompare = a.date.localeCompare(b.date);
+                if (dateCompare !== 0) return dateCompare;
+                return a.startTime.localeCompare(b.startTime);
+            });
+
+            const org = organizations.find(o => o.id === currentEditOrg);
+
+            let html = '';
+            sortedData.forEach((item, index) => {
+                const dateObj = parseDate(item.date);
+                html += `
+                    <div class="bg-gray-50 border-2 border-gray-300 rounded-xl p-3 md:p-5 hover:shadow-lg transition-all">
+                        <div class="flex justify-between items-start mb-3 md:mb-4">
+                            <div class="flex items-center gap-2 md:gap-3">
+                                <div class="w-10 h-10 md:w-12 md:h-12 rounded-lg flex items-center justify-center text-white font-bold text-base md:text-lg" style="background: ${org.color}">
+                                    ${index + 1}
+                                </div>
+                                <div>
+                                    <span class="text-xs md:text-sm text-gray-500">Ngày</span>
+                                    <div class="font-bold text-sm md:text-lg" style="color: ${org.color}">${getDayName(dateObj)}, ${formatDate(dateObj)}</div>
+                                </div>
+                            </div>
+                            <button onclick="showDeleteConfirmation(${index})" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1.5 md:py-2 px-3 md:px-4 rounded-lg transition-all flex items-center gap-1 md:gap-2 text-xs md:text-base">
+                                <svg class="w-3 h-3 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                </svg>
+                                Xóa
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-1 gap-3 md:gap-4">
+                            <div>
+                                <label class="block text-xs md:text-sm font-semibold text-gray-700 mb-1 md:mb-2">Ngày (YYYY-MM-DD)</label>
+                                <input type="date" data-index="${index}" data-field="date" value="${item.date}" class="schedule-field w-full px-3 md:px-4 py-1.5 md:py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none text-sm md:text-base">
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-xs md:text-sm font-semibold text-gray-700 mb-1 md:mb-2">Giờ bắt đầu</label>
+                                    <input type="time" data-index="${index}" data-field="startTime" value="${item.startTime}" class="schedule-field w-full px-3 md:px-4 py-1.5 md:py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none text-sm md:text-base">
+                                </div>
+                                <div>
+                                    <label class="block text-xs md:text-sm font-semibold text-gray-700 mb-1 md:mb-2">Giờ kết thúc</label>
+                                    <input type="time" data-index="${index}" data-field="endTime" value="${item.endTime}" class="schedule-field w-full px-3 md:px-4 py-1.5 md:py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none text-sm md:text-base">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs md:text-sm font-semibold text-gray-700 mb-1 md:mb-2">Nội dung công tác</label>
+                                <textarea data-index="${index}" data-field="content" class="schedule-field w-full px-3 md:px-4 py-1.5 md:py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none text-sm md:text-base" rows="2">${item.content}</textarea>
+                            </div>
+                            <div>
+                                <label class="block text-xs md:text-sm font-semibold text-gray-700 mb-1 md:mb-2">Địa điểm</label>
+                                <input type="text" data-index="${index}" data-field="location" value="${item.location}" class="schedule-field w-full px-3 md:px-4 py-1.5 md:py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none text-sm md:text-base">
+                            </div>
+                            <div>
+                                <label class="block text-xs md:text-sm font-semibold text-gray-700 mb-1 md:mb-2">Thành phần tham gia</label>
+                                <input type="text" data-index="${index}" data-field="participants" value="${item.participants}" class="schedule-field w-full px-3 md:px-4 py-1.5 md:py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none text-sm md:text-base">
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            if (html === '') {
+                const displayIcon = org.iconUrl ? 
+                    `<div class="w-20 h-20 mx-auto rounded-lg overflow-hidden shadow-lg"><img src="${org.iconUrl}" alt="${org.name}" loading="lazy" onerror="this.style.display='none'" class="w-full h-full object-contain"></div>` : 
+                    `<div class="w-20 h-20 mx-auto rounded-lg flex items-center justify-center text-white text-4xl font-bold" style="background: ${org.color}">${org.name.charAt(0)}</div>`;
+                
+                html = `
+                    <div class="text-center py-12 md:py-16 text-gray-500">
+                        ${displayIcon}
+                        <p class="text-lg md:text-xl font-semibold mt-4">${org.name}</p>
+                        <p class="mt-2 text-sm md:text-base">Chưa có lịch công tác</p>
+                        <p class="mt-1 text-sm md:text-base">Nhấn "Thêm Công Tác Mới" để bắt đầu</p>
+                    </div>
+                `;
+            }
+
+            editList.innerHTML = html;
+            
+            // Add event listeners for all schedule fields
+            document.querySelectorAll('.schedule-field').forEach(element => {
+                element.addEventListener('change', (e) => {
+                    const index = parseInt(e.target.dataset.index);
+                    const field = e.target.dataset.field;
+                    const value = e.target.value;
+                    updateScheduleItem(index, field, value);
+                });
+            });
+        }
+
+        function updateScheduleItem(index, field, value) {
+            scheduleDataByOrg[currentEditOrg][index][field] = value;
+        }
+
+        function showDeleteConfirmation(index) {
+            deleteIndex = index;
+            const item = scheduleDataByOrg[currentEditOrg][index];
+            const dateObj = parseDate(item.date);
+            const org = organizations.find(o => o.id === currentEditOrg);
+            const overlay = document.getElementById('delete-overlay');
+            const infoDiv = document.getElementById('delete-item-info');
+            
+            const displayIcon = org.iconUrl ? 
+                `<div class="w-8 h-8 rounded overflow-hidden"><img src="${org.iconUrl}" alt="${org.name}" loading="lazy" onerror="this.style.display='none'" class="w-full h-full object-contain"></div>` : 
+                `<div class="w-8 h-8 rounded flex items-center justify-center text-white text-sm font-bold" style="background: ${org.color}">${org.name.charAt(0)}</div>`;
+            
+            infoDiv.innerHTML = `
+                <div class="flex items-center gap-2 mb-2">
+                    ${displayIcon}
+                    <span class="font-bold text-gray-700">${org.name}</span>
+                </div>
+                <div class="font-bold text-gray-800 mb-1">${getDayName(dateObj)}, ${formatDate(dateObj)}</div>
+                <div class="text-gray-600 text-sm mb-1">${item.startTime} - ${item.endTime}</div>
+                <div class="text-gray-700">${item.content}</div>
+            `;
+            
+            overlay.classList.remove('hidden');
+        }
+
+        function hideDeleteConfirmation() {
+            document.getElementById('delete-overlay').classList.add('hidden');
+            deleteIndex = -1;
+        }
+
+        function confirmDelete() {
+            if (deleteIndex >= 0) {
+                scheduleDataByOrg[currentEditOrg].splice(deleteIndex, 1);
+                renderEditList();
+                showNotification('🗑️ Đã xóa công tác');
+            }
+            hideDeleteConfirmation();
+        }
+
+        function addNewScheduleItem() {
+            const today = new Date();
+            const dateStr = today.toISOString().split('T')[0];
+            
+            const newItem = {
+                date: dateStr,
+                startTime: "08:00",
+                endTime: "10:00",
+                content: "Nội dung công tác mới",
+                location: "Địa điểm",
+                participants: "Thành phần tham gia"
+            };
+            
+            if (!scheduleDataByOrg[currentEditOrg]) {
+                scheduleDataByOrg[currentEditOrg] = [];
+            }
+            
+            scheduleDataByOrg[currentEditOrg].push(newItem);
+            renderEditList();
+            
+            const editList = document.getElementById('edit-list');
+            setTimeout(() => {
+                editList.scrollTop = editList.scrollHeight;
+            }, 100);
+        }
+
+        function saveChanges() {
+            renderAllSchedules();
+            toggleEditMode();
+            showNotification('✅ Đã lưu thay đổi thành công!');
+        }
+
+        function cancelEdit() {
+            toggleEditMode();
+        }
+
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.className = 'fixed top-20 right-4 bg-green-600 text-white px-6 py-4 rounded-lg shadow-xl z-50 font-bold text-lg animate-bounce';
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        // Event listeners
+        document.getElementById('toggle-edit-mode').addEventListener('click', toggleEditMode);
+        document.getElementById('close-edit-panel').addEventListener('click', toggleEditMode);
+        document.getElementById('add-new-btn').addEventListener('click', addNewScheduleItem);
+        document.getElementById('save-changes').addEventListener('click', saveChanges);
+        document.getElementById('cancel-edit').addEventListener('click', cancelEdit);
+        document.getElementById('cancel-delete').addEventListener('click', hideDeleteConfirmation);
+        document.getElementById('confirm-delete').addEventListener('click', confirmDelete);
+
+        // Make functions global
+        window.updateScheduleItem = updateScheduleItem;
+        window.showDeleteConfirmation = showDeleteConfirmation;
+
+        // Initialize
+        async function init() {
+            if (window.elementSdk) {
+                await window.elementSdk.init({
+                    defaultConfig,
+                    onConfigChange,
+                    mapToCapabilities,
+                    mapToEditPanelValues
+                });
+            } else {
+                onConfigChange(defaultConfig);
+            }
+        }
+
+        init();
+    </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9c13a99a14a085d5',t:'MTc2ODk2NTQ4OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
